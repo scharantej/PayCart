@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Checkout - Ecommerce Website</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+<h1>Checkout</h1>
+<form action="/process_checkout" method="post">
+<table class="cart-table">
+<thead>
+<tr>
+<th>Product</th>
+<th>Quantity</th>
+<th>Price</th>
+</tr>
+</thead>
+<tbody>
+{% for item in cart_items %}
+<tr>
+<td>{{ item.product.name }}</td>
+<td>{{ item.quantity }}</td>
+<td>${{ item.product.price * item.quantity }}</td>
+</tr>
+{% endfor %}
+</tbody>
+<tfoot>
+<tr>
+<td colspan="2">Total:</td>
+<td>${{ total }}</td>
+</tr>
+</tfoot>
+</table>
+<div class="payment-info">
+<label for="email">Email:</label>
+<input type="email" name="email" id="email">
+<label for="card-number">Card Number:</label>
+<input type="text" name="card-number" id="card-number">
+<label for="expiration-date">Expiration Date:</label>
+<input type="text" name="expiration-date" id="expiration-date">
+<label for="cvv">CVV:</label>
+<input type="text" name="cvv" id="cvv">
+</div>
+<button type="submit">Checkout</button>
+</form>
+<script>
+const stripe = Stripe('{{ stripe_publishable_key }}');
+const elements = stripe.elements();
+const cardElement = elements.create('cardNumber', {
+style: {
+base: {
+fontSize: '16px',
+color: '#424770',
+'::placeholder': {
+color: '#aab7c4',
+},
+},
+invalid: {
+color: '#9e2146',
+},
+},
+});
+cardElement.mount('#card-number');
+const expirationElement = elements.create('cardExpiry', {
+style: {
+base: {
+fontSize: '16px',
+color: '#424770',
+'::placeholder': {
+color: '#aab7c4',
+},
+},
+invalid: {
+color: '#9e2146',
+},
+},
+});
+expirationElement.mount('#expiration-date');
+const cvvElement = elements.create('cardCvc', {
+style: {
+base: {
+fontSize: '16px',
+color: '#424770',
+'::placeholder': {
+color: '#aab7c4',
+},
+},
+invalid: {
+color: '#9e2146',
+},
+},
+});
+cvvElement.mount('#cvv');
+const form = document.getElementById('checkout-form');
+form.addEventListener('submit', (event) => {
+event.preventDefault();
+stripe.createToken(cardElement).then((result) => {
+if (result.error) {
+// Show error message
+} else {
+// Send token to server
+const token = result.token.id;
+const email = document.getElementById('email').value;
+const data = {
+stripeToken: token,
+email: email,
+};
+fetch('/process_checkout', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+},
+body: JSON.stringify(data),
+})
+.then((response) => {
+if (response.ok) {
+// Redirect to order confirmation page
+} else {
+// Show error message
+}
+});
+}
+});
+});
+</script>
+</body>
+</html>
+
+
